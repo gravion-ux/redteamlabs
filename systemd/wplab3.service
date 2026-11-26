@@ -1,0 +1,16 @@
+[Unit]
+Description=RedTeam Lab 3 (WordPress multisite on 127.0.0.1:8082)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/redteamlabs/lab3
+ExecStart=/usr/bin/php -S 127.0.0.1:8082 -t /opt/redteamlabs/lab3
+Restart=always
+RestartSec=3
+User=www-data
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

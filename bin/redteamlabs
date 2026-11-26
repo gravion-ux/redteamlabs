@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# redteamlabs — manage three local WordPress labs (ports 8080/8081/8082).
+# Usable by humans and AI agents: stable output, no interactive prompts.
+set -u
+
+PORTS="${REDTEAMLABS_PORTS:-8080 8081 8082}"
+HOST="${REDTEAMLABS_HOST:-127.0.0.1}"
+UNITS="${REDTEAMLABS_UNITS:-wplab wplab2 wplab3}"
+SYSTEMCTL="${REDTEAMLABS_SYSTEMCTL:-systemctl}"
+
+usage() {
+  cat <<'EOF'
+Usage: redteamlabs <command>
+
+Commands:
+  start    Start the three lab services (systemd)
+  stop     Stop the three lab services (systemd)
+  status   Show configured ports and per-lab HTTP status
+  health   Exit 0 only if every lab returns HTTP 200
+  help     Show this help
+
+Environment:
+  REDTEAMLABS_PORTS   Space-separated ports (default: 8080 8081 8082)
+  REDTEAMLABS_HOST    Host to probe (default: 127.0.0.1)
+  REDTEAMLABS_UNITS   Space-separated systemd units (default: wplab wplab2 wplab3)
+EOF
+}
+
+probe() {
+  # $1 = port; prints HTTP code or 000
+  curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://${HOST}:$1/" 2>/dev/null || echo "000"
+}
+
+cmd_status() {
+  local i=1 port code
+  for port in $PORTS; do
+    code="$(probe "$port")"
+    if [ "$code" = "200" ]; then
+      echo "lab${i} port=${port} status=up http=${code}"
+    else
+      echo "lab${i} port=${port} status=down http=${code}"
+    fi
+    i=$((i + 1))
+  done
+}
+
+cmd_health() {
+  local port code all_ok=1
+  for port in $PORTS; do
+    code="$(probe "$port")"
+    if [ "$code" != "200" ]; then
+      all_ok=0
+    fi
+  done
+  if [ "$all_ok" = "1" ]; then
+    echo "health=ok"
+    return 0
+  fi
+  echo "health=degraded"
+  return 1
+}
+
+cmd_start() {
+  # shellcheck disable=SC2086
+  "$SYSTEMCTL" start $UNITS
+}
+
+cmd_stop() {
+  # shellcheck disable=SC2086
+  "$SYSTEMCTL" stop $UNITS
+}
+
+main() {
+  case "${1:-help}" in
+    start) cmd_start ;;
+    stop) cmd_stop ;;
+    status) cmd_status ;;
+    health) cmd_health ;;
+    help|-h|--help) usage ;;
+    *) echo "unknown command: $1" >&2; usage >&2; return 2 ;;
+  esac
+}
+
+main "$@"

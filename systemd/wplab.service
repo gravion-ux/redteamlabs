@@ -1,0 +1,17 @@
+[Unit]
+Description=RedTeam Lab 1 (WordPress on 127.0.0.1:8080)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/redteamlabs/lab1
+ExecStart=/usr/bin/php -S 127.0.0.1:8080 -t /opt/redteamlabs/lab1
+Restart=always
+RestartSec=3
+# Least privilege: run as a dedicated unprivileged user in production setups.
+User=www-data
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

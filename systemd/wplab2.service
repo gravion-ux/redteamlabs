@@ -1,0 +1,16 @@
+[Unit]
+Description=RedTeam Lab 2 (WordPress on 127.0.0.1:8081)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/redteamlabs/lab2
+ExecStart=/usr/bin/php -S 127.0.0.1:8081 -t /opt/redteamlabs/lab2
+Restart=always
+RestartSec=3
+User=www-data
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
